@@ -1,0 +1,105 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  background: var(--background);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.college-logo {
+  background: var(--gradient);
+  padding: 0.75rem;
+  border-radius: 12px;
+  color: white;
+  animation: glow 2s infinite alternate;
+}
+
+.college-info h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.college-info p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.sidebar-nav {
+  padding: 2rem 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+  position: relative;
+}
+
+.nav-item:hover {
+  background: rgba(255,107,53,0.1);
+  color: var(--primary-color);
+  transform: translateX(5px);
+}
+
+.nav-item.active {
+  background: rgba(255,107,53,0.15);
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  right: 1rem;
+  width: 8px;
+  height: 8px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  animation: glow 1.5s infinite alternate;
+}
+
+.collapsed .nav-item {
+  justify-content: center;
+  padding: 1rem;
+}
+
+.collapsed .nav-item span {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.collapsed {
+    transform: translateX(0);
+    width: 100%;
+  }
+}

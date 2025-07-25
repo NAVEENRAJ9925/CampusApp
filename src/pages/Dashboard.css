@@ -1,0 +1,270 @@
+.dashboard {
+  animation: fadeInUp 0.6s ease;
+}
+
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.dashboard-stats {
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--card-background);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--hover-shadow);
+}
+
+.stat-icon {
+  background: rgba(255,107,53,0.1);
+  padding: 1rem;
+  border-radius: 12px;
+  color: var(--primary-color);
+}
+
+.stat-content h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.stat-content p {
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.stat-trend {
+  color: #27ae60;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.dashboard-main {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.main-cards h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.service-card {
+  background: var(--card-background);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--card-color);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.service-card:hover::before {
+  transform: scaleX(1);
+}
+
+.service-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+  border-color: var(--card-color);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.card-icon {
+  background: rgba(255,107,53,0.1);
+  padding: 1rem;
+  border-radius: 16px;
+  color: var(--card-color);
+}
+
+.card-stats {
+  background: var(--card-color);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.service-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.service-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-footer span {
+  color: var(--card-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.activity-widget, .recommendations-widget {
+  background: var(--card-background);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.activity-widget h3, .recommendations-widget h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.activity-indicator.announcement {
+  background: #3498db;
+}
+
+.activity-indicator.lost-found {
+  background: #2ecc71;
+}
+
+.activity-indicator.complaint {
+  background: #e74c3c;
+}
+
+.activity-indicator.timetable {
+  background: #f39c12;
+}
+
+.activity-content p {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.activity-content span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.recommendations-widget {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--card-background), var(--card-background)) padding-box,
+              var(--gradient) border-box;
+  animation: glow 3s infinite alternate;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255,107,53,0.1);
+}
+
+.recommendation-item:last-child {
+  border-bottom: none;
+}
+
+.rec-icon {
+  font-size: 1.2rem;
+}
+
+.recommendation-item p {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+  .dashboard-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 2rem;
+  }
+  
+  .service-card {
+    padding: 1.5rem;
+  }
+  
+  .stat-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
