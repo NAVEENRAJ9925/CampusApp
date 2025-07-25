@@ -94,6 +94,23 @@ const LostFound = () => {
     }
   ];
 
+  // Add mock contact info for demonstration
+  const contactInfo = {
+    'John Doe': { name: 'John Doe', mobile: '9876543210', email: 'john.doe@example.com' },
+    'Jane Smith': { name: 'Jane Smith', mobile: '9123456780', email: 'jane.smith@example.com' },
+    'Mike Johnson': { name: 'Mike Johnson', mobile: '9001122334', email: 'mike.johnson@example.com' },
+    'Sarah Wilson': { name: 'Sarah Wilson', mobile: '9988776655', email: 'sarah.wilson@example.com' },
+    'Security Office': { name: 'Security Office', mobile: '044-123456', email: 'security@sri-eshwar.edu' },
+    'Current User': { name: 'Current User', mobile: '9000000000', email: 'current.user@example.com' }
+  };
+  const [showContact, setShowContact] = useState(false);
+  const [contact, setContact] = useState({ name: '', mobile: '', email: '' });
+  const handleContactClick = (postedBy) => {
+    setContact(contactInfo[postedBy] || { name: postedBy, mobile: 'N/A', email: 'N/A' });
+    setShowContact(true);
+  };
+  const handleCloseContact = () => setShowContact(false);
+
   useEffect(() => {
     setItems(mockItems);
     setFilteredItems(mockItems);
@@ -253,7 +270,7 @@ const LostFound = () => {
               
               <div className="item-footer">
                 <span className="posted-by">Posted by {item.postedBy}</span>
-                <button className="btn btn-secondary">Contact</button>
+                <button className="btn btn-secondary" onClick={() => handleContactClick(item.postedBy)}>Contact</button>
               </div>
             </div>
           </div>
@@ -384,6 +401,21 @@ const LostFound = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showContact && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Contact Info</h2>
+              <button className="close-btn" onClick={handleCloseContact}><X size={24} /></button>
+            </div>
+            <div className="contact-info-content">
+              <div><strong>Name:</strong> {contact.name}</div>
+              <div><strong>Mobile No:</strong> {contact.mobile}</div>
+              <div><strong>Email:</strong> {contact.email}</div>
+            </div>
           </div>
         </div>
       )}
