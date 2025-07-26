@@ -60,7 +60,7 @@ const LostFound = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:8000/api/lost-found",
+        "https://backend-bcex.onrender.com/api/lost-found",
         { headers: createAuthHeaders(token) }
       );
       
@@ -134,7 +134,7 @@ const LostFound = () => {
       console.log("Token:", token);
       
       const response = await axios.post(
-        "http://localhost:8000/api/lost-found",
+        "https://backend-bcex.onrender.com/api/lost-found",
         itemData,
         { headers: createAuthHeaders(token) }
       );
@@ -171,7 +171,7 @@ const LostFound = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:8000/api/lost-found/${id}`,
+        `https://backend-bcex.onrender.com/api/lost-found/${id}`,
         updatedData,
         { headers: createAuthHeaders(token) }
       );
@@ -196,7 +196,7 @@ const LostFound = () => {
           return;
         }
 
-        await axios.delete(`http://localhost:8000/api/lost-found/${id}`, {
+        await axios.delete(`https://backend-bcex.onrender.com/api/lost-found/${id}`, {
           headers: createAuthHeaders(token)
         });
         setItems(items.filter(item => item._id !== id));

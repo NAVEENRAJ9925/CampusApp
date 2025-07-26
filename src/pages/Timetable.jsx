@@ -58,7 +58,7 @@ const Timetable = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:8000/api/timetable",
+        "https://backend-bcex.onrender.com/api/timetable",
         { headers: createAuthHeaders(token) }
       );
       console.log("Fetched timetable:", response.data);
@@ -115,7 +115,7 @@ const Timetable = () => {
       console.log("Token:", token);
       
       const response = await axios.post(
-        "http://localhost:8000/api/timetable",
+        "https://backend-bcex.onrender.com/api/timetable",
         {
           semester: "Fall 2024",
           year: 2024,
@@ -147,7 +147,7 @@ const Timetable = () => {
     try {
       setLoading(true);
       const response = await axios.put(
-        `http://localhost:8000/api/timetable/${classId}`,
+        `hhttps://backend-bcex.onrender.com/api/timetable/${classId}`,
         updatedClass,
         {
         headers: { Authorization: `Bearer ${token}` }
@@ -168,7 +168,7 @@ const Timetable = () => {
       try {
         setLoading(true);
         await axios.delete(
-          `http://localhost:8000/api/timetable/${classId}`,
+          `https://backend-bcex.onrender.com/api/timetable/${classId}`,
           {
           headers: { Authorization: `Bearer ${token}` }
           }

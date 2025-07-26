@@ -50,8 +50,8 @@ const Polls = () => {
       }
 
       const url = selectedCategory === "all" 
-        ? "http://localhost:8000/api/polls"
-        : `http://localhost:8000/api/polls/category/${selectedCategory}`;
+        ? "https://backend-bcex.onrender.com/api/polls"
+        : `https://backend-bcex.onrender.com/api/polls/category/${selectedCategory}`;
 
       const response = await axios.get(url, { headers: createAuthHeaders(token) });
       console.log("Fetched polls:", response.data);
@@ -94,7 +94,7 @@ const Polls = () => {
       console.log("Sending poll:", pollData);
       
       const response = await axios.post(
-        "http://localhost:8000/api/polls",
+        "https://backend-bcex.onrender.com/api/polls",
         pollData,
         { headers: createAuthHeaders(token) }
       );
@@ -123,7 +123,7 @@ const Polls = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        `http://localhost:8000/api/polls/${pollId}/vote`,
+        `https://backend-bcex.onrender.com/api/polls/${pollId}/vote`,
         { optionIndex },
         { headers: createAuthHeaders(token) }
       );
@@ -150,7 +150,7 @@ const Polls = () => {
   const handleViewResults = async (pollId) => {
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/polls/${pollId}/results`,
+        `https://backend-bcex.onrender.com/api/polls/${pollId}/results`,
         { headers: createAuthHeaders(token) }
       );
       
@@ -169,7 +169,7 @@ const Polls = () => {
       try {
         setLoading(true);
         await axios.delete(
-          `http://localhost:8000/api/polls/${pollId}`,
+          `https://backend-bcex.onrender.com/api/polls/${pollId}`,
           { headers: createAuthHeaders(token) }
         );
         setPolls(polls.filter(poll => poll._id !== pollId));

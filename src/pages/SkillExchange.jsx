@@ -58,7 +58,7 @@ const SkillExchange = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:8000/api/skill-exchange",
+        "https://backend-bcex.onrender.com/api/skill-exchange",
         { headers: createAuthHeaders(token) }
       );
       console.log("Fetched skills:", response.data);
@@ -102,7 +102,7 @@ const SkillExchange = () => {
       console.log("Token:", token);
       
       const response = await axios.post(
-        "http://localhost:8000/api/skill-exchange",
+        "https://backend-bcex.onrender.com/api/skill-exchange",
         skillData,
         { headers: createAuthHeaders(token) }
       );
@@ -131,7 +131,7 @@ const SkillExchange = () => {
     try {
       setLoading(true);
       const response = await axios.patch(
-        `http://localhost:8000/api/skill-exchange/${skillId}`,
+        `https://backend-bcex.onrender.com/api/skill-exchange/${skillId}`,
         { status: "booked" },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -160,7 +160,7 @@ const SkillExchange = () => {
       try {
         setLoading(true);
         await axios.delete(
-          `http://localhost:8000/api/skill-exchange/${skillId}`,
+          `https://backend-bcex.onrender.com/api/skill-exchange/${skillId}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }

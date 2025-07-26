@@ -49,8 +49,8 @@ const TechNews = () => {
       }
 
       const url = selectedType === "all" 
-        ? "http://localhost:8000/api/tech-news"
-        : `http://localhost:8000/api/tech-news/type/${selectedType}`;
+        ? "https://backend-bcex.onrender.com/api/tech-news"
+        : `https://backend-bcex.onrender.com/api/tech-news/type/${selectedType}`;
 
       const response = await axios.get(url, { headers: createAuthHeaders(token) });
       console.log("Fetched tech news:", response.data);
@@ -93,7 +93,7 @@ const TechNews = () => {
       console.log("Sending tech news:", techNewsData);
       
       const response = await axios.post(
-        "http://localhost:8000/api/tech-news",
+        "https://backend-bcex.onrender.com/api/tech-news",
         techNewsData,
         { headers: createAuthHeaders(token) }
       );
@@ -123,7 +123,7 @@ const TechNews = () => {
       try {
         setLoading(true);
         await axios.delete(
-          `http://localhost:8000/api/tech-news/${newsId}`,
+          `https://backend-bcex.onrender.com/api/tech-news/${newsId}`,
           { headers: createAuthHeaders(token) }
         );
         setTechNews(techNews.filter(news => news._id !== newsId));

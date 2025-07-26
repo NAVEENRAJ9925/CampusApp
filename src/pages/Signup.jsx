@@ -56,7 +56,7 @@ const Signup = () => {
 
       // Step 3: Create user in backend database
       console.log("Creating user in backend database...");
-      const backendResponse = await fetch("http://localhost:8000/api/auth/signup", {
+      const backendResponse = await fetch("https://backend-bcex.onrender.com/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

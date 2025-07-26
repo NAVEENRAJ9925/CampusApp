@@ -53,7 +53,7 @@ const Complaints = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:8000/api/complaints",
+        "https://backend-bcex.onrender.com/api/complaints",
         { headers: createAuthHeaders(token) }
       );
       console.log("Fetched complaints:", response.data);
@@ -96,7 +96,7 @@ const Complaints = () => {
       console.log("Token:", token);
       
       const response = await axios.post(
-        "http://localhost:8000/api/complaints",
+        "https://backend-bcex.onrender.com/api/complaints",
         complaintData,
         { headers: createAuthHeaders(token) }
       );
@@ -124,7 +124,7 @@ const Complaints = () => {
     try {
       setLoading(true);
       const response = await axios.patch(
-        `http://localhost:8000/api/complaints/${id}/status`,
+        `https://backend-bcex.onrender.com/api/complaints/${id}/status`,
         { status },
         {
           headers: { Authorization: `Bearer ${token}` }

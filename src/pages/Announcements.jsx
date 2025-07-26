@@ -48,7 +48,7 @@ const Announcements = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:8000/api/announcements/getann",
+        "https://backend-bcex.onrender.com/api/announcements/getann",
         { headers: createAuthHeaders(token) }
       );
       console.log("Fetched announcements:", response.data);
@@ -108,7 +108,7 @@ const Announcements = () => {
       console.log("Token:", token);
       
       const response = await axios.post(
-        "http://localhost:8000/api/announcements/createann",
+        "https://backend-bcex.onrender.com/api/announcements/createann",
         announcement,
         {
           headers: { 
