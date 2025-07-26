@@ -148,7 +148,7 @@ const SkillExchange = () => {
       if (error.response?.status === 409) {
         alert("This session is already booked by another student!");
       } else {
-        setError("Failed to book session");
+      setError("Failed to book session");
       }
     } finally {
       setLoading(false);
