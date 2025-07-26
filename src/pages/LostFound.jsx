@@ -1,206 +1,270 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MapPin, Calendar, X, Camera } from 'lucide-react';
-import './LostFound.css';
+import React, { useState, useEffect } from "react";
+import { Search, Filter, Plus, X, MapPin, Calendar } from "lucide-react";
+import "./LostFound.css";
+import { useAuth } from '../context/AuthContext';
+import axios from "axios";
+import { handleApiError, handleFetchSuccess, validateToken, createAuthHeaders } from '../utils/errorHandler';
 
 const LostFound = () => {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [newItem, setNewItem] = useState({
-    title: '',
-    category: 'electronics',
-    location: '',
-    description: '',
-    status: 'lost',
-    imageUrl: '',
-    date: new Date().toISOString().split('T')[0]
+    itemType: "",
+    title: "",
+    description: "",
+    location: "",
+    contactInfo: "",
+    status: "lost",
   });
+  const { token, user } = useAuth();
 
   const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'electronics', label: 'Electronics' },
-    { value: 'books', label: 'Books' },
-    { value: 'clothing', label: 'Clothing' },
-    { value: 'accessories', label: 'Accessories' },
-    { value: 'documents', label: 'Documents' },
-    { value: 'other', label: 'Other' }
+    { value: "all", label: "All Categories" },
+    { value: "electronics", label: "Electronics" },
+    { value: "books", label: "Books" },
+    { value: "clothing", label: "Clothing" },
+    { value: "accessories", label: "Accessories" },
+    { value: "other", label: "Other" },
   ];
 
-  const statusOptions = [
-    { value: 'all', label: 'All Status' },
-    { value: 'lost', label: 'Lost' },
-    { value: 'found', label: 'Found' }
+  const statuses = [
+    { value: "all", label: "All Status" },
+    { value: "lost", label: "Lost" },
+    { value: "found", label: "Found" },
+    { value: "claimed", label: "Claimed" },
   ];
-
-  // Mock data
-  const mockItems = [
-    {
-      id: 1,
-      title: "iPhone 13 Pro",
-      category: "electronics",
-      location: "Library - 2nd Floor",
-      description: "Black iPhone 13 Pro with a blue case. Lost near the computer section.",
-      status: "lost",
-      imageUrl: "https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg?auto=compress&cs=tinysrgb&w=400",
-      date: "2024-01-15",
-      postedBy: "John Doe"
-    },
-    {
-      id: 2,
-      title: "Data Structures Textbook",
-      category: "books",
-      location: "CSE Department",
-      description: "Data Structures and Algorithms textbook by Cormen. Has my name written inside.",
-      status: "found",
-      imageUrl: "https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=400",
-      date: "2024-01-14",
-      postedBy: "Jane Smith"
-    },
-    {
-      id: 3,
-      title: "Blue Hoodie",
-      category: "clothing",
-      location: "Basketball Court",
-      description: "Navy blue hoodie with college logo. Size M. Left behind after sports practice.",
-      status: "found",
-      imageUrl: "https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=400",
-      date: "2024-01-13",
-      postedBy: "Mike Johnson"
-    },
-    {
-      id: 4,
-      title: "Silver Watch",
-      category: "accessories",
-      location: "Cafeteria",
-      description: "Silver wristwatch with black leather strap. Casio brand.",
-      status: "lost",
-      imageUrl: "https://images.pexels.com/photos/277390/pexels-photo-277390.jpeg?auto=compress&cs=tinysrgb&w=400",
-      date: "2024-01-12",
-      postedBy: "Sarah Wilson"
-    },
-    {
-      id: 5,
-      title: "Student ID Card",
-      category: "documents",
-      location: "Main Gate",
-      description: "Student ID card belonging to Alex Kumar, Roll No: 20CS001",
-      status: "found",
-      imageUrl: "https://images.pexels.com/photos/6804581/pexels-photo-6804581.jpeg?auto=compress&cs=tinysrgb&w=400",
-      date: "2024-01-11",
-      postedBy: "Security Office"
-    }
-  ];
-
-  // Add mock contact info for demonstration
-  const contactInfo = {
-    'John Doe': { name: 'John Doe', mobile: '9876543210', email: 'john.doe@example.com' },
-    'Jane Smith': { name: 'Jane Smith', mobile: '9123456780', email: 'jane.smith@example.com' },
-    'Mike Johnson': { name: 'Mike Johnson', mobile: '9001122334', email: 'mike.johnson@example.com' },
-    'Sarah Wilson': { name: 'Sarah Wilson', mobile: '9988776655', email: 'sarah.wilson@example.com' },
-    'Security Office': { name: 'Security Office', mobile: '044-123456', email: 'security@sri-eshwar.edu' },
-    'Current User': { name: 'Current User', mobile: '9000000000', email: 'current.user@example.com' }
-  };
-  const [showContact, setShowContact] = useState(false);
-  const [contact, setContact] = useState({ name: '', mobile: '', email: '' });
-  const handleContactClick = (postedBy) => {
-    setContact(contactInfo[postedBy] || { name: postedBy, mobile: 'N/A', email: 'N/A' });
-    setShowContact(true);
-  };
-  const handleCloseContact = () => setShowContact(false);
 
   useEffect(() => {
-    setItems(mockItems);
-    setFilteredItems(mockItems);
-  }, []);
+    if (token) {
+      fetchItems();
+    }
+  }, [token]);
 
-  useEffect(() => {
-    let filtered = items;
-    
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(item => item.category === selectedCategory);
-    }
-    
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(item => item.status === selectedStatus);
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(item => 
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      const tokenValidation = validateToken(token);
+      if (!tokenValidation.valid) {
+        setError(tokenValidation.message);
+        setItems([]);
+        setFilteredItems([]);
+        return;
+      }
+
+      const response = await axios.get(
+        "http://localhost:8000/api/lost-found",
+        { headers: createAuthHeaders(token) }
       );
+      
+      console.log("Fetched items:", response.data);
+      handleFetchSuccess(response.data, setItems, setError, "items");
+      setFilteredItems(response.data);
+    } catch (error) {
+      handleApiError(error, setError);
+      setItems([]);
+      setFilteredItems([]);
+    } finally {
+      setLoading(false);
     }
-    
-    setFilteredItems(filtered);
+  };
+
+  useEffect(() => {
+    handleFilterChange();
   }, [items, selectedCategory, selectedStatus, searchTerm]);
 
-  const handleAddItem = (e) => {
+  const handleFilterChange = () => {
+    let filtered = [...items];
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((item) => item.itemType === selectedCategory);
+    }
+
+    if (selectedStatus !== "all") {
+      filtered = filtered.filter((item) => item.status === selectedStatus);
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredItems(filtered);
+  };
+
+  const handleAddItem = async (e) => {
     e.preventDefault();
-    const item = {
-      id: Date.now(),
-      ...newItem,
-      postedBy: "Current User",
-      imageUrl: newItem.imageUrl || "https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=400"
+    
+    const tokenValidation = validateToken(token);
+    if (!tokenValidation.valid) {
+      setError(tokenValidation.message);
+      return;
+    }
+
+    if (!newItem.title.trim() || !newItem.description.trim() || !newItem.location.trim()) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    const itemData = {
+      itemType: newItem.itemType,
+      title: newItem.title.trim(),
+      description: newItem.description.trim(),
+      location: newItem.location.trim(),
+      contactInfo: newItem.contactInfo.trim(),
+      status: newItem.status,
     };
-    setItems([item, ...items]);
-    setNewItem({
-      title: '',
-      category: 'electronics',
-      location: '',
-      description: '',
-      status: 'lost',
-      imageUrl: '',
-      date: new Date().toISOString().split('T')[0]
-    });
-    setShowAddForm(false);
+
+    try {
+      console.log("Sending item:", itemData);
+      console.log("Token:", token);
+      
+      const response = await axios.post(
+        "http://localhost:8000/api/lost-found",
+        itemData,
+        { headers: createAuthHeaders(token) }
+      );
+      
+      console.log("Response:", response.data);
+      
+      setItems([response.data, ...items]);
+      setNewItem({
+        itemType: "",
+        title: "",
+        description: "",
+        location: "",
+        contactInfo: "",
+        status: "lost",
+      });
+      setShowAddForm(false);
+      setError("");
+    } catch (error) {
+      handleApiError(error, setError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateItem = async (id, updatedData) => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      const tokenValidation = validateToken(token);
+      if (!tokenValidation.valid) {
+        setError(tokenValidation.message);
+        return;
+      }
+
+      const response = await axios.put(
+        `http://localhost:8000/api/lost-found/${id}`,
+        updatedData,
+        { headers: createAuthHeaders(token) }
+      );
+      setItems(items.map(item => item._id === id ? response.data : item));
+      setError("");
+    } catch (error) {
+      handleApiError(error, setError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteItem = async (id) => {
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      try {
+        setLoading(true);
+        setError("");
+        
+        const tokenValidation = validateToken(token);
+        if (!tokenValidation.valid) {
+          setError(tokenValidation.message);
+          return;
+        }
+
+        await axios.delete(`http://localhost:8000/api/lost-found/${id}`, {
+          headers: createAuthHeaders(token)
+        });
+        setItems(items.filter(item => item._id !== id));
+        setError("");
+      } catch (error) {
+        handleApiError(error, setError);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "lost":
+        return "#e74c3c";
+      case "found":
+        return "#2ecc71";
+      case "claimed":
+        return "#3498db";
+      default:
+        return "#95a5a6";
+    }
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      electronics: '📱',
-      books: '📚',
-      clothing: '👕',
-      accessories: '⌚',
-      documents: '📄',
-      other: '🎒'
-    };
-    return icons[category] || '📦';
-  };
-
   return (
-    <div className="lost-found-page">
+    <div className="lost-found-container">
       <div className="page-header">
         <div className="header-content">
           <h1>Lost & Found</h1>
-          <p>Help your fellow students find their lost belongings</p>
+          <p>Help others find their lost items or report found items</p>
         </div>
-        <button 
-          className="btn btn-primary"
+        <button
+          className="add-item-button"
           onClick={() => setShowAddForm(true)}
+          disabled={loading}
         >
-          <Plus size={20} />
-          Report Item
+          <Plus size={20} /> Add Item
         </button>
       </div>
+
+      {error && (
+        <div className="error-message" style={{ 
+          background: '#ffebee', 
+          color: '#c62828', 
+          padding: '10px', 
+          margin: '10px 0', 
+          borderRadius: '4px',
+          border: '1px solid #ffcdd2'
+        }}>
+          {error}
+        </div>
+      )}
 
       <div className="controls-section">
         <div className="search-bar">
           <Search size={20} />
           <input
             type="text"
-            placeholder="Search items, location, or description..."
+            placeholder="Search items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -208,12 +272,12 @@ const LostFound = () => {
 
         <div className="filters">
           <div className="filter-group">
-            <label>Category</label>
+            <Filter size={16} />
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
-              {categories.map(category => (
+              {categories.map((category) => (
                 <option key={category.value} value={category.value}>
                   {category.label}
                 </option>
@@ -222,12 +286,11 @@ const LostFound = () => {
           </div>
 
           <div className="filter-group">
-            <label>Status</label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
             >
-              {statusOptions.map(status => (
+              {statuses.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
                 </option>
@@ -237,51 +300,73 @@ const LostFound = () => {
         </div>
       </div>
 
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          Loading...
+        </div>
+      )}
+
       <div className="items-grid">
-        {filteredItems.map(item => (
-          <div key={item.id} className="item-card">
-            <div className="item-image">
-              <img src={item.imageUrl} alt={item.title} />
-              <div className={`status-badge ${item.status}`}>
-                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-              </div>
-            </div>
-            
+        {filteredItems.map((item) => (
+          <div key={item._id} className="item-card">
             <div className="item-content">
               <div className="item-header">
                 <h3>{item.title}</h3>
-                <span className="category-icon">
-                  {getCategoryIcon(item.category)}
+                <span
+                  className="status-badge"
+                  style={{ backgroundColor: getStatusColor(item.status) }}
+                >
+                  {item.status}
                 </span>
               </div>
-              
-              <p className="item-description">{item.description}</p>
-              
+
               <div className="item-details">
                 <div className="detail-item">
+                  <strong>Type:</strong> {item.itemType}
+                </div>
+                <div className="detail-item">
+                  <strong>Description:</strong> {item.description}
+                </div>
+                <div className="detail-item">
                   <MapPin size={16} />
-                  <span>{item.location}</span>
+                  <strong>Location:</strong> {item.location}
                 </div>
                 <div className="detail-item">
                   <Calendar size={16} />
-                  <span>{formatDate(item.date)}</span>
+                  <strong>Posted:</strong> {formatDate(item.createdAt || item.date)}
                 </div>
               </div>
-              
+
               <div className="item-footer">
-                <span className="posted-by">Posted by {item.postedBy}</span>
-                <button className="btn btn-secondary" onClick={() => handleContactClick(item.postedBy)}>Contact</button>
+                <div className="posted-by">
+                  Posted by: {item.postedBy?.name || "Unknown"}
+                </div>
+                {user?.id === item.postedBy?._id && (
+                  <div className="item-actions">
+                    <button
+                      onClick={() => handleUpdateItem(item._id, { status: "claimed" })}
+                      disabled={loading}
+                    >
+                      Update
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(item._id)}
+                      disabled={loading}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {filteredItems.length === 0 && (
+      {filteredItems.length === 0 && !loading && (
         <div className="empty-state">
-          <Search size={64} />
           <h3>No items found</h3>
-          <p>Try adjusting your search criteria or be the first to report an item</p>
+          <p>Try adjusting your search or filter criteria</p>
         </div>
       )}
 
@@ -289,133 +374,119 @@ const LostFound = () => {
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Report Lost/Found Item</h2>
-              <button 
+              <h2>Add New Item</h2>
+              <button
                 className="close-btn"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  setError("");
+                }}
+                disabled={loading}
               >
                 <X size={24} />
               </button>
             </div>
-            
+
             <form onSubmit={handleAddItem}>
               <div className="form-group">
-                <label className="form-label">Item Title</label>
+                <label>Item Type</label>
+                <select
+                  value={newItem.itemType}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, itemType: e.target.value })
+                  }
+                  required
+                  disabled={loading}
+                >
+                  <option value="">Select Type</option>
+                  {categories.slice(1).map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Title</label>
                 <input
                   type="text"
-                  className="form-input"
                   value={newItem.title}
-                  onChange={(e) => setNewItem({
-                    ...newItem,
-                    title: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, title: e.target.value })
+                  }
                   required
+                  disabled={loading}
                 />
               </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Category</label>
-                  <select
-                    className="form-select"
-                    value={newItem.category}
-                    onChange={(e) => setNewItem({
-                      ...newItem,
-                      category: e.target.value
-                    })}
-                  >
-                    {categories.slice(1).map(category => (
-                      <option key={category.value} value={category.value}>
-                        {category.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select
-                    className="form-select"
-                    value={newItem.status}
-                    onChange={(e) => setNewItem({
-                      ...newItem,
-                      status: e.target.value
-                    })}
-                  >
-                    <option value="lost">Lost</option>
-                    <option value="found">Found</option>
-                  </select>
-                </div>
-              </div>
-              
+
               <div className="form-group">
-                <label className="form-label">Location</label>
+                <label>Description</label>
+                <textarea
+                  value={newItem.description}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, description: e.target.value })
+                  }
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Location</label>
                 <input
                   type="text"
-                  className="form-input"
-                  placeholder="Where was it lost/found?"
                   value={newItem.location}
-                  onChange={(e) => setNewItem({
-                    ...newItem,
-                    location: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, location: e.target.value })
+                  }
                   required
+                  disabled={loading}
                 />
               </div>
-              
+
               <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Provide detailed description..."
-                  value={newItem.description}
-                  onChange={(e) => setNewItem({
-                    ...newItem,
-                    description: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Image URL (Optional)</label>
+                <label>Contact Info</label>
                 <input
-                  type="url"
-                  className="form-input"
-                  placeholder="Add image URL for better identification"
-                  value={newItem.imageUrl}
-                  onChange={(e) => setNewItem({
-                    ...newItem,
-                    imageUrl: e.target.value
-                  })}
+                  type="text"
+                  value={newItem.contactInfo}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, contactInfo: e.target.value })
+                  }
+                  disabled={loading}
                 />
               </div>
-              
+
+              <div className="form-group">
+                <label>Status</label>
+                <select
+                  value={newItem.status}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, status: e.target.value })
+                  }
+                  disabled={loading}
+                >
+                  <option value="lost">Lost</option>
+                  <option value="found">Found</option>
+                </select>
+              </div>
+
               <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddForm(false)}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setError("");
+                  }}
+                  disabled={loading}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  <Camera size={16} />
-                  Report Item
+                <button type="submit" disabled={loading}>
+                  {loading ? "Adding..." : "Add Item"}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      {showContact && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>Contact Info</h2>
-              <button className="close-btn" onClick={handleCloseContact}><X size={24} /></button>
-            </div>
-            <div className="contact-info-content">
-              <div><strong>Name:</strong> {contact.name}</div>
-              <div><strong>Mobile No:</strong> {contact.mobile}</div>
-              <div><strong>Email:</strong> {contact.email}</div>
-            </div>
           </div>
         </div>
       )}

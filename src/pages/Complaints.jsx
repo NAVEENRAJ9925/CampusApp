@@ -1,361 +1,294 @@
-import React, { useState, useEffect } from 'react';
-import { MessageSquare, Plus, Filter, Clock, CheckCircle, AlertCircle, X, Send } from 'lucide-react';
-import './Complaints.css';
+import React, { useState, useEffect } from "react";
+import { Plus, X, AlertCircle, Clock, CheckCircle } from "lucide-react";
+import "./Complaints.css";
+import { useAuth } from '../context/AuthContext';
+import axios from "axios";
+import { handleApiError, handleFetchSuccess, validateToken, createAuthHeaders } from '../utils/errorHandler';
 
 const Complaints = () => {
   const [complaints, setComplaints] = useState([]);
-  const [filteredComplaints, setFilteredComplaints] = useState([]);
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [newComplaint, setNewComplaint] = useState({
-    title: '',
-    category: 'electricity',
-    description: '',
-    location: '',
-    priority: 'medium'
+    title: "",
+    category: "electricity",
+    description: "",
+    location: "",
+    priority: "medium",
   });
-
-  const statusOptions = [
-    { value: 'all', label: 'All Status', color: '#6c757d' },
-    { value: 'pending', label: 'Pending', color: '#ffc107' },
-    { value: 'in-progress', label: 'In Progress', color: '#17a2b8' },
-    { value: 'resolved', label: 'Resolved', color: '#28a745' }
-  ];
+  const { token, user } = useAuth();
 
   const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'electricity', label: 'Electricity' },
-    { value: 'water', label: 'Water Supply' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'cleanliness', label: 'Cleanliness' },
-    { value: 'internet', label: 'Internet/WiFi' },
-    { value: 'other', label: 'Other' }
+    { value: "electricity", label: "Electricity" },
+    { value: "water", label: "Water" },
+    { value: "maintenance", label: "Maintenance" },
+    { value: "cleanliness", label: "Cleanliness" },
+    { value: "internet", label: "Internet" },
+    { value: "other", label: "Other" },
   ];
 
   const priorities = [
-    { value: 'low', label: 'Low', color: '#28a745' },
-    { value: 'medium', label: 'Medium', color: '#ffc107' },
-    { value: 'high', label: 'High', color: '#dc3545' }
-  ];
-
-  // Mock data
-  const mockComplaints = [
-    {
-      id: 1,
-      title: "No electricity in Block A - Room 201",
-      category: "electricity",
-      description: "The power has been out in our room for the past 2 days. We have informed the warden but no action has been taken yet.",
-      location: "Block A, Room 201",
-      status: "pending",
-      priority: "high",
-      submittedDate: "2024-01-15",
-      resolvedDate: null,
-      submittedBy: "John Doe"
-    },
-    {
-      id: 2,
-      title: "Water leakage in bathroom",
-      category: "water",
-      description: "There is continuous water leakage from the bathroom tap. It's causing water wastage and making the floor slippery.",
-      location: "Block B, Room 105",
-      status: "in-progress",
-      priority: "medium",
-      submittedDate: "2024-01-12",
-      resolvedDate: null,
-      submittedBy: "Jane Smith"
-    },
-    {
-      id: 3,
-      title: "WiFi not working in common area",
-      category: "internet",
-      description: "The WiFi connection in the common study area has been down for 3 days. Students are unable to access online resources.",
-      location: "Block C, Common Area",
-      status: "resolved",
-      priority: "medium",
-      submittedDate: "2024-01-10",
-      resolvedDate: "2024-01-14",
-      submittedBy: "Mike Johnson"
-    },
-    {
-      id: 4,
-      title: "Broken window in room",
-      category: "maintenance",
-      description: "The window glass is cracked and needs immediate replacement for security reasons.",
-      location: "Block A, Room 315",
-      status: "pending",
-      priority: "high",
-      submittedDate: "2024-01-14",
-      resolvedDate: null,
-      submittedBy: "Sarah Wilson"
-    },
-    {
-      id: 5,
-      title: "Corridor cleaning not done regularly",
-      category: "cleanliness",
-      description: "The corridor on the 2nd floor is not being cleaned properly. There's accumulated dust and garbage.",
-      location: "Block B, 2nd Floor",
-      status: "in-progress",
-      priority: "low",
-      submittedDate: "2024-01-11",
-      resolvedDate: null,
-      submittedBy: "Alex Kumar"
-    }
+    { value: "low", label: "Low", color: "#2ecc71" },
+    { value: "medium", label: "Medium", color: "#f39c12" },
+    { value: "high", label: "High", color: "#e74c3c" },
   ];
 
   useEffect(() => {
-    setComplaints(mockComplaints);
-    setFilteredComplaints(mockComplaints);
-  }, []);
-
-  useEffect(() => {
-    let filtered = complaints;
-    
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(complaint => complaint.status === selectedStatus);
+    if (token) {
+      fetchComplaints();
     }
-    
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(complaint => complaint.category === selectedCategory);
-    }
-    
-    setFilteredComplaints(filtered);
-  }, [complaints, selectedStatus, selectedCategory]);
+  }, [token]);
 
-  const handleSubmitComplaint = (e) => {
-    e.preventDefault();
-    const complaint = {
-      id: Date.now(),
-      ...newComplaint,
-      status: 'pending',
-      submittedDate: new Date().toISOString().split('T')[0],
-      resolvedDate: null,
-      submittedBy: "Current User"
-    };
-    setComplaints([complaint, ...complaints]);
-    setNewComplaint({
-      title: '',
-      category: 'electricity',
-      description: '',
-      location: '',
-      priority: 'medium'
-    });
-    setShowAddForm(false);
-  };
-
-  const updateComplaintStatus = (complaintId, newStatus) => {
-    setComplaints(prev => prev.map(complaint => {
-      if (complaint.id === complaintId) {
-        return {
-          ...complaint,
-          status: newStatus,
-          resolvedDate: newStatus === 'resolved' ? new Date().toISOString().split('T')[0] : null
-        };
+  const fetchComplaints = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      const tokenValidation = validateToken(token);
+      if (!tokenValidation.valid) {
+        setError(tokenValidation.message);
+        setComplaints([]);
+        return;
       }
-      return complaint;
-    }));
-  };
 
-  const getStatusColor = (status) => {
-    return statusOptions.find(opt => opt.value === status)?.color || '#6c757d';
-  };
-
-  const getPriorityColor = (priority) => {
-    return priorities.find(p => p.value === priority)?.color || '#ffc107';
-  };
-
-  const getProgressPercentage = (status) => {
-    switch (status) {
-      case 'pending': return 25;
-      case 'in-progress': return 65;
-      case 'resolved': return 100;
-      default: return 0;
+      const response = await axios.get(
+        "http://localhost:8000/api/complaints",
+        { headers: createAuthHeaders(token) }
+      );
+      console.log("Fetched complaints:", response.data);
+      handleFetchSuccess(response.data, setComplaints, setError, "complaints");
+    } catch (error) {
+      handleApiError(error, setError);
+      setComplaints([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const handleSubmitComplaint = async (e) => {
+    e.preventDefault();
+    
+    const tokenValidation = validateToken(token);
+    if (!tokenValidation.valid) {
+      setError(tokenValidation.message);
+      return;
+    }
+
+    if (!newComplaint.title.trim() || !newComplaint.description.trim() || !newComplaint.location.trim()) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    const complaintData = {
+      title: newComplaint.title.trim(),
+      category: newComplaint.category,
+      description: newComplaint.description.trim(),
+      location: newComplaint.location.trim(),
+      priority: newComplaint.priority,
+    };
+
+    try {
+      console.log("Sending complaint:", complaintData);
+      console.log("Token:", token);
+      
+      const response = await axios.post(
+        "http://localhost:8000/api/complaints",
+        complaintData,
+        { headers: createAuthHeaders(token) }
+      );
+      
+      console.log("Response:", response.data);
+      
+      setComplaints([response.data, ...complaints]);
+      setNewComplaint({
+        title: "",
+        category: "electricity",
+        description: "",
+        location: "",
+        priority: "medium",
+      });
+      setShowForm(false);
+      setError("");
+    } catch (error) {
+      handleApiError(error, setError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateComplaintStatus = async (id, status) => {
+    try {
+      setLoading(true);
+      const response = await axios.patch(
+        `http://localhost:8000/api/complaints/${id}/status`,
+        { status },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setComplaints(complaints.map(complaint => 
+        complaint._id === id ? response.data : complaint
+      ));
+      setError("");
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      setError("Failed to update complaint status");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Clock size={16} />;
-      case 'in-progress': return <AlertCircle size={16} />;
-      case 'resolved': return <CheckCircle size={16} />;
-      default: return <Clock size={16} />;
+      case "pending":
+        return <Clock size={16} />;
+      case "in-progress":
+        return <AlertCircle size={16} />;
+      case "resolved":
+        return <CheckCircle size={16} />;
+      default:
+        return <Clock size={16} />;
     }
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pending":
+        return "#f39c12";
+      case "in-progress":
+        return "#3498db";
+      case "resolved":
+        return "#2ecc71";
+      default:
+        return "#95a5a6";
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    return priorities.find(p => p.value === priority)?.color || "#f39c12";
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   return (
-    <div className="complaints-page">
+    <div className="complaints-container">
       <div className="page-header">
         <div className="header-content">
-          <h1>Hostel Complaints</h1>
-          <p>Register and track complaints for quick resolution</p>
+          <h1>Campus Complaints</h1>
+          <p>Report issues and track their resolution status</p>
         </div>
         <button 
-          className="btn btn-primary"
-          onClick={() => setShowAddForm(true)}
+          className="add-complaint-button"
+          onClick={() => setShowForm(true)}
+          disabled={loading}
         >
-          <Plus size={20} />
-          Submit Complaint
+          <Plus size={20} /> Submit Complaint
         </button>
       </div>
 
-      <div className="complaints-stats">
-        <div className="stat-card">
-          <div className="stat-number">{complaints.filter(c => c.status === 'pending').length}</div>
-          <div className="stat-label">Pending</div>
-          <div className="stat-color" style={{ backgroundColor: '#ffc107' }}></div>
+      {error && (
+        <div className="error-message" style={{ 
+          background: '#ffebee', 
+          color: '#c62828', 
+          padding: '10px', 
+          margin: '10px 0', 
+          borderRadius: '4px',
+          border: '1px solid #ffcdd2'
+        }}>
+          {error}
         </div>
-        <div className="stat-card">
-          <div className="stat-number">{complaints.filter(c => c.status === 'in-progress').length}</div>
-          <div className="stat-label">In Progress</div>
-          <div className="stat-color" style={{ backgroundColor: '#17a2b8' }}></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{complaints.filter(c => c.status === 'resolved').length}</div>
-          <div className="stat-label">Resolved</div>
-          <div className="stat-color" style={{ backgroundColor: '#28a745' }}></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{complaints.length}</div>
-          <div className="stat-label">Total</div>
-          <div className="stat-color" style={{ backgroundColor: '#6c757d' }}></div>
-        </div>
-      </div>
+      )}
 
-      <div className="complaints-filters">
-        <div className="filter-group">
-          <label>Status</label>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-          >
-            {statusOptions.map(status => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          Loading...
         </div>
+      )}
 
-        <div className="filter-group">
-          <label>Category</label>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            {categories.map(category => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="complaints-list">
-        {filteredComplaints.map(complaint => (
-          <div key={complaint.id} className="complaint-card">
+      <div className="complaints-grid">
+        {complaints.map((complaint) => (
+          <div key={complaint._id} className="complaint-card">
             <div className="complaint-header">
-              <div className="complaint-title">
                 <h3>{complaint.title}</h3>
-                <div className="complaint-meta">
-                  <span className="category-tag">{categories.find(c => c.value === complaint.category)?.label}</span>
-                  <span 
-                    className="priority-tag"
-                    style={{ backgroundColor: getPriorityColor(complaint.priority) }}
-                  >
-                    {priorities.find(p => p.value === complaint.priority)?.label}
-                  </span>
-                </div>
-              </div>
-              <div className="complaint-status">
-                <div 
-                  className="status-badge"
-                  style={{ backgroundColor: getStatusColor(complaint.status) }}
-                >
+              <div className="status-badge" style={{ backgroundColor: getStatusColor(complaint.status) }}>
                   {getStatusIcon(complaint.status)}
-                  {statusOptions.find(s => s.value === complaint.status)?.label}
-                </div>
+                {complaint.status}
               </div>
             </div>
 
-            <div className="complaint-content">
-              <p>{complaint.description}</p>
-              <div className="complaint-location">
+            <div className="complaint-details">
+              <div className="detail-item">
+                <strong>Category:</strong> {complaint.category}
+              </div>
+              <div className="detail-item">
+                <strong>Description:</strong> {complaint.description}
+              </div>
+              <div className="detail-item">
                 <strong>Location:</strong> {complaint.location}
               </div>
-            </div>
-
-            <div className="complaint-progress">
-              <div className="progress-header">
-                <span>Progress</span>
-                <span>{getProgressPercentage(complaint.status)}%</span>
+              <div className="detail-item">
+                <strong>Priority:</strong>
+                <span style={{ color: getPriorityColor(complaint.priority) }}>
+                  {complaint.priority}
+                </span>
               </div>
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill"
-                  style={{ width: `${getProgressPercentage(complaint.status)}%` }}
-                ></div>
+              <div className="detail-item">
+                <strong>Submitted:</strong> {formatDate(complaint.createdAt || complaint.submittedDate)}
               </div>
             </div>
 
             <div className="complaint-footer">
-              <div className="complaint-dates">
-                <div>
-                  <strong>Submitted:</strong> {formatDate(complaint.submittedDate)}
+              <div className="submitted-by">
+                By: {complaint.submittedBy?.name || "Unknown"}
+              </div>
+              {user?.role === "admin" && (
+                <div className="status-actions">
+                  <select
+                    value={complaint.status}
+                    onChange={(e) => updateComplaintStatus(complaint._id, e.target.value)}
+                    disabled={loading}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
                 </div>
-                {complaint.resolvedDate && (
-                  <div>
-                    <strong>Resolved:</strong> {formatDate(complaint.resolvedDate)}
-                  </div>
-                )}
-              </div>
-              <div className="complaint-actions">
-                {complaint.status === 'pending' && (
-                  <button 
-                    className="btn btn-secondary"
-                    onClick={() => updateComplaintStatus(complaint.id, 'in-progress')}
-                  >
-                    Mark In Progress
-                  </button>
-                )}
-                {complaint.status === 'in-progress' && (
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
-                  >
-                    Mark Resolved
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      {filteredComplaints.length === 0 && (
+      {complaints.length === 0 && !loading && (
         <div className="empty-state">
-          <MessageSquare size={64} />
+          <AlertCircle size={64} />
           <h3>No complaints found</h3>
-          <p>Try adjusting your filters or submit the first complaint</p>
+          <p>Submit your first complaint to get started</p>
         </div>
       )}
 
-      {showAddForm && (
+      {showForm && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
               <h2>Submit New Complaint</h2>
               <button 
                 className="close-btn"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setError("");
+                }}
+                disabled={loading}
               >
                 <X size={24} />
               </button>
@@ -363,31 +296,28 @@ const Complaints = () => {
             
             <form onSubmit={handleSubmitComplaint}>
               <div className="form-group">
-                <label className="form-label">Complaint Title</label>
+                <label>Title</label>
                 <input
                   type="text"
-                  className="form-input"
                   value={newComplaint.title}
-                  onChange={(e) => setNewComplaint({
-                    ...newComplaint,
-                    title: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setNewComplaint({ ...newComplaint, title: e.target.value })
+                  }
                   required
+                  disabled={loading}
                 />
               </div>
               
-              <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Category</label>
+                <label>Category</label>
                   <select
-                    className="form-select"
                     value={newComplaint.category}
-                    onChange={(e) => setNewComplaint({
-                      ...newComplaint,
-                      category: e.target.value
-                    })}
-                  >
-                    {categories.slice(1).map(category => (
+                  onChange={(e) =>
+                    setNewComplaint({ ...newComplaint, category: e.target.value })
+                  }
+                  disabled={loading}
+                >
+                  {categories.map((category) => (
                       <option key={category.value} value={category.value}>
                         {category.label}
                       </option>
@@ -396,60 +326,60 @@ const Complaints = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Priority</label>
-                  <select
-                    className="form-select"
-                    value={newComplaint.priority}
-                    onChange={(e) => setNewComplaint({
-                      ...newComplaint,
-                      priority: e.target.value
-                    })}
-                  >
-                    {priorities.map(priority => (
-                      <option key={priority.value} value={priority.value}>
-                        {priority.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <label>Description</label>
+                <textarea
+                  value={newComplaint.description}
+                  onChange={(e) =>
+                    setNewComplaint({ ...newComplaint, description: e.target.value })
+                  }
+                  required
+                  disabled={loading}
+                />
               </div>
               
               <div className="form-group">
-                <label className="form-label">Location</label>
+                <label>Location</label>
                 <input
                   type="text"
-                  className="form-input"
-                  placeholder="Block, Room number, or specific location"
                   value={newComplaint.location}
-                  onChange={(e) => setNewComplaint({
-                    ...newComplaint,
-                    location: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setNewComplaint({ ...newComplaint, location: e.target.value })
+                  }
                   required
+                  disabled={loading}
                 />
               </div>
               
               <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Provide detailed description of the issue..."
-                  value={newComplaint.description}
-                  onChange={(e) => setNewComplaint({
-                    ...newComplaint,
-                    description: e.target.value
-                  })}
-                  required
-                />
+                <label>Priority</label>
+                <select
+                  value={newComplaint.priority}
+                  onChange={(e) =>
+                    setNewComplaint({ ...newComplaint, priority: e.target.value })
+                  }
+                  disabled={loading}
+                >
+                  {priorities.map((priority) => (
+                    <option key={priority.value} value={priority.value}>
+                      {priority.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddForm(false)}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false);
+                    setError("");
+                  }}
+                  disabled={loading}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  <Send size={16} />
-                  Submit Complaint
+                <button type="submit" disabled={loading}>
+                  {loading ? "Submitting..." : "Submit Complaint"}
                 </button>
               </div>
             </form>

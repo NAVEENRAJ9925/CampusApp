@@ -61,6 +61,17 @@ body {
   min-height: calc(100vh - 80px);
 }
 
+.auth-fullscreen {
+  margin-left: 0 !important;
+  width: 100vw !important;
+  min-height: 100vh !important;
+  padding: 0 !important;
+  background: none !important;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

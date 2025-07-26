@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Menu, Sun, Moon, User } from 'lucide-react';
+import { Menu, Sun, Moon, User as UserIcon, LogOut } from 'lucide-react';
 import './TopNavbar.css';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useNavigate } from 'react-router-dom';
 
 const initialProfile = {
-  name: 'John Doe',
+  name: 'User',
   role: 'Computer Science',
   age: '',
   rollNo: '',
@@ -15,8 +17,18 @@ const initialProfile = {
 };
 
 const TopNavbar = ({ onToggleSidebar, theme, onToggleTheme }) => {
+  const { getUsername, logout } = useAuth();
+  const navigate = useNavigate();
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [profile, setProfile] = useState(initialProfile);
+
+  // Get username using the centralized function
+  const userName = getUsername();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const handleProfileClick = () => setShowProfileForm(true);
   const handleClose = () => setShowProfileForm(false);
@@ -36,7 +48,7 @@ const TopNavbar = ({ onToggleSidebar, theme, onToggleTheme }) => {
           <Menu size={24} />
         </button>
         <div className="greeting">
-          <h2>Welcome back, Student!</h2>
+          <h2>Welcome back, {userName}!</h2>
           <p>Have a productive day at Sri Eshwar College</p>
         </div>
       </div>
@@ -46,13 +58,16 @@ const TopNavbar = ({ onToggleSidebar, theme, onToggleTheme }) => {
         </button>
         <div className="user-profile" onClick={handleProfileClick} style={{ cursor: 'pointer' }}>
           <div className="user-avatar">
-            <User size={20} />
+            <UserIcon size={20} />
           </div>
           <div className="user-info">
-            <span className="user-name">{profile.name}</span>
+            <span className="user-name">{userName}</span>
             <span className="user-role">{profile.role}</span>
           </div>
         </div>
+        <button className="logout-btn" onClick={handleLogout} title="Logout">
+          <LogOut size={20} />
+        </button>
       </div>
       {showProfileForm && (
         <div className="profile-popup-overlay">

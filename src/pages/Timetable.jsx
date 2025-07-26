@@ -1,368 +1,405 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Plus, Edit, Trash2, X, Save } from 'lucide-react';
-import './Timetable.css';
+import React, { useState, useEffect } from "react";
+import { Plus, X, Clock, MapPin, Calendar } from "lucide-react";
+import "./Timetable.css";
+import { useAuth } from '../context/AuthContext';
+import axios from "axios";
+import { handleApiError, validateToken, createAuthHeaders } from '../utils/errorHandler';
 
 const Timetable = () => {
   const [schedule, setSchedule] = useState({});
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingClass, setEditingClass] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [newClass, setNewClass] = useState({
-    subject: '',
-    time: '',
-    location: '',
-    day: 'monday',
-    color: '#ff6b35'
+    courseName: "",
+    instructor: "",
+    day: "monday",
+    period: 1,
+    room: "",
   });
+  const { token, user } = useAuth();
 
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const timeSlots = [
-    '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'
+  const days = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
   ];
 
-  const subjectColors = [
-    '#ff6b35', '#3498db', '#2ecc71', '#e74c3c', '#f39c12',
-    '#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#95a5a6'
+  // Simplified 7-period timetable from 8:40 AM to 4:10 PM
+  const periods = [
+    { period: 1, startTime: "08:40", endTime: "09:30" },
+    { period: 2, startTime: "09:30", endTime: "10:20" },
+    { period: 3, startTime: "10:20", endTime: "11:10" },
+    { period: 4, startTime: "11:10", endTime: "12:00" },
+    { period: 5, startTime: "12:00", endTime: "12:50" },
+    { period: 6, startTime: "12:50", endTime: "13:40" },
+    { period: 7, startTime: "13:40", endTime: "14:30" }
   ];
-
-  // Mock data
-  const mockSchedule = {
-    monday: [
-      { id: 1, subject: 'Data Structures', time: '9:00 AM', location: 'Room 101', color: '#3498db' },
-      { id: 2, subject: 'Computer Networks', time: '11:00 AM', location: 'Room 205', color: '#2ecc71' },
-      { id: 3, subject: 'Database Systems', time: '2:00 PM', location: 'Lab 3', color: '#e74c3c' }
-    ],
-    tuesday: [
-      { id: 4, subject: 'Operating Systems', time: '10:00 AM', location: 'Room 102', color: '#f39c12' },
-      { id: 5, subject: 'Software Engineering', time: '1:00 PM', location: 'Room 301', color: '#9b59b6' },
-      { id: 6, subject: 'Web Development', time: '3:00 PM', location: 'Lab 1', color: '#1abc9c' }
-    ],
-    wednesday: [
-      { id: 7, subject: 'Machine Learning', time: '9:00 AM', location: 'Room 201', color: '#34495e' },
-      { id: 8, subject: 'Data Structures Lab', time: '2:00 PM', location: 'Lab 2', color: '#3498db' }
-    ],
-    thursday: [
-      { id: 9, subject: 'Algorithms', time: '10:00 AM', location: 'Room 103', color: '#e67e22' },
-      { id: 10, subject: 'Computer Graphics', time: '12:00 PM', location: 'Lab 4', color: '#95a5a6' },
-      { id: 11, subject: 'Project Work', time: '3:00 PM', location: 'Room 401', color: '#ff6b35' }
-    ],
-    friday: [
-      { id: 12, subject: 'Compiler Design', time: '9:00 AM', location: 'Room 202', color: '#2ecc71' },
-      { id: 13, subject: 'Artificial Intelligence', time: '11:00 AM', location: 'Room 302', color: '#e74c3c' }
-    ],
-    saturday: [
-      { id: 14, subject: 'Seminar', time: '10:00 AM', location: 'Auditorium', color: '#f39c12' }
-    ]
-  };
 
   useEffect(() => {
-    setSchedule(mockSchedule);
-  }, []);
+    if (token) {
+    fetchTimetable();
+    }
+  }, [token]);
 
-  const handleAddClass = (e) => {
-    e.preventDefault();
-    const classItem = {
-      id: Date.now(),
-      ...newClass
-    };
-    
-    setSchedule(prev => ({
-      ...prev,
-      [newClass.day]: [...(prev[newClass.day] || []), classItem].sort((a, b) => 
-        timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time)
-      )
-    }));
-    
-    setNewClass({
-      subject: '',
-      time: '',
-      location: '',
-      day: 'monday',
-      color: '#ff6b35'
-    });
-    setShowAddForm(false);
-  };
-
-  const handleEditClass = (classItem) => {
-    setEditingClass(classItem);
-    setNewClass(classItem);
-    setShowAddForm(true);
-  };
-
-  const handleUpdateClass = (e) => {
-    e.preventDefault();
-    setSchedule(prev => {
-      const updatedSchedule = { ...prev };
+  const fetchTimetable = async () => {
+    try {
+      setLoading(true);
+      setError("");
       
-      // Remove from old day if day changed
-      if (editingClass.day !== newClass.day) {
-        updatedSchedule[editingClass.day] = updatedSchedule[editingClass.day].filter(
-          cls => cls.id !== editingClass.id
-        );
+      const tokenValidation = validateToken(token);
+      if (!tokenValidation.valid) {
+        setError(tokenValidation.message);
+        setSchedule({ courses: [] });
+        return;
       }
+
+      const response = await axios.get(
+        "http://localhost:8000/api/timetable",
+        { headers: createAuthHeaders(token) }
+      );
+      console.log("Fetched timetable:", response.data);
       
-      // Update or add to new day
-      const daySchedule = updatedSchedule[newClass.day] || [];
-      const existingIndex = daySchedule.findIndex(cls => cls.id === editingClass.id);
-      
-      if (existingIndex >= 0) {
-        daySchedule[existingIndex] = { ...newClass, id: editingClass.id };
+      if (response.data && response.data.courses) {
+        setSchedule(response.data);
+        if (response.data.courses.length === 0) {
+          setError("No classes found. Add your first class!");
+        }
       } else {
-        daySchedule.push({ ...newClass, id: editingClass.id });
+        setSchedule({ courses: [] });
+        setError("No classes found. Add your first class!");
       }
+    } catch (error) {
+      handleApiError(error, setError);
+      setSchedule({ courses: [] });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddClass = async (e) => {
+    e.preventDefault();
+    
+    const tokenValidation = validateToken(token);
+    if (!tokenValidation.valid) {
+      setError(tokenValidation.message);
+      return;
+    }
+
+    if (!newClass.courseName.trim() || !newClass.instructor.trim() || !newClass.room.trim()) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    // Get the selected period's start and end times
+    const selectedPeriod = periods.find(p => p.period === newClass.period);
+    
+    const classData = {
+      courseName: newClass.courseName.trim(),
+      instructor: newClass.instructor.trim(),
+      day: newClass.day,
+      period: newClass.period,
+      startTime: selectedPeriod.startTime,
+      endTime: selectedPeriod.endTime,
+      room: newClass.room.trim(),
+    };
+
+    try {
+      console.log("Sending class:", classData);
+      console.log("Token:", token);
       
-      updatedSchedule[newClass.day] = daySchedule.sort((a, b) => 
-        timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time)
+      const response = await axios.post(
+        "http://localhost:8000/api/timetable",
+        {
+          semester: "Fall 2024",
+          year: 2024,
+          courses: [classData]
+        },
+        { headers: createAuthHeaders(token) }
       );
       
-      return updatedSchedule;
-    });
-    
-    setEditingClass(null);
-    setNewClass({
-      subject: '',
-      time: '',
-      location: '',
-      day: 'monday',
-      color: '#ff6b35'
-    });
-    setShowAddForm(false);
+      console.log("Response:", response.data);
+      
+      setSchedule(response.data);
+      setNewClass({
+        courseName: "",
+        instructor: "",
+        day: "monday",
+        period: 1,
+        room: "",
+      });
+      setShowAddForm(false);
+      setError("");
+    } catch (error) {
+      handleApiError(error, setError);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteClass = (day, classId) => {
-    setSchedule(prev => ({
-      ...prev,
-      [day]: prev[day].filter(cls => cls.id !== classId)
-    }));
+  const handleUpdateClass = async (classId, updatedClass) => {
+    try {
+      setLoading(true);
+      const response = await axios.put(
+        `http://localhost:8000/api/timetable/${classId}`,
+        updatedClass,
+        {
+        headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setSchedule(response.data);
+      setError("");
+    } catch (error) {
+      console.error("Failed to update class:", error);
+      setError("Failed to update class");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const formatDay = (day) => {
-    return day.charAt(0).toUpperCase() + day.slice(1);
+  const handleDeleteClass = async (classId) => {
+    if (window.confirm("Are you sure you want to delete this class?")) {
+      try {
+        setLoading(true);
+        await axios.delete(
+          `http://localhost:8000/api/timetable/${classId}`,
+          {
+          headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        await fetchTimetable();
+        setError("");
+      } catch (error) {
+        console.error("Failed to delete class:", error);
+        setError("Failed to delete class");
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
-  const getTimeSlotClasses = (day, time) => {
-    return schedule[day]?.filter(cls => cls.time === time) || [];
+  const getClassesForDay = (day) => {
+    return schedule.courses?.filter(cls => cls.day === day) || [];
+  };
+
+  const formatTime = (time) => {
+    return time.replace(":", ".");
   };
 
   return (
-    <div className="timetable-page">
+    <div className="timetable-container">
       <div className="page-header">
         <div className="header-content">
           <h1>Class Timetable</h1>
-          <p>Organize your weekly schedule and never miss a class</p>
+          <p>Manage your class schedule and view upcoming sessions</p>
         </div>
-        <button 
-          className="btn btn-primary"
+        <button
+          className="add-class-button"
           onClick={() => setShowAddForm(true)}
+          disabled={loading}
         >
-          <Plus size={20} />
-          Add Class
+          <Plus size={20} /> Add Class
         </button>
       </div>
 
-      <div className="timetable-container">
-        <div className="timetable-grid">
-          <div className="time-header">Time</div>
-          {days.map(day => (
-            <div key={day} className="day-header">
-              {formatDay(day)}
-            </div>
-          ))}
-          
-          {timeSlots.map(time => (
-            <React.Fragment key={time}>
-              <div className="time-slot">{time}</div>
-              {days.map(day => (
-                <div key={`${day}-${time}`} className="schedule-cell">
-                  {getTimeSlotClasses(day, time).map(classItem => (
-                    <div 
-                      key={classItem.id}
-                      className="class-item"
-                      style={{ backgroundColor: classItem.color }}
-                    >
-                      <div className="class-header">
-                        <h4>{classItem.subject}</h4>
-                        <div className="class-actions">
-                          <button 
-                            className="action-btn"
-                            onClick={() => handleEditClass(classItem)}
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button 
-                            className="action-btn"
-                            onClick={() => handleDeleteClass(day, classItem.id)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="class-details">
-                        <div className="detail-item">
-                          <Clock size={12} />
-                          <span>{classItem.time}</span>
-                        </div>
-                        <div className="detail-item">
-                          <MapPin size={12} />
-                          <span>{classItem.location}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </React.Fragment>
-          ))}
+      {error && (
+        <div className="error-message" style={{ 
+          background: '#ffebee', 
+          color: '#c62828', 
+          padding: '10px', 
+          margin: '10px 0', 
+          borderRadius: '4px',
+          border: '1px solid #ffcdd2'
+        }}>
+          {error}
         </div>
+      )}
+
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          Loading...
+        </div>
+      )}
+
+      <div className="schedule-grid">
+        {days.map((day) => (
+          <div key={day} className="day-column">
+            <div className="day-header">
+              <h3>{day.charAt(0).toUpperCase() + day.slice(1)}</h3>
+            </div>
+            <div className="period-slots">
+              {periods.map((period) => {
+                const classesAtPeriod = getClassesForDay(day).filter(
+                  cls => cls.period === period.period
+                );
+                return (
+                  <div key={period.period} className="period-slot">
+                    <div className="period-label">
+                      <Clock size={12} />
+                      Period {period.period}
+                      <br />
+                      <small>{period.startTime} - {period.endTime}</small>
+                    </div>
+                    {classesAtPeriod.map((cls) => (
+                      <div key={cls._id} className="class-block">
+                        <div className="class-info">
+                          <h4>{cls.courseName}</h4>
+                          <p>
+                            <Clock size={14} />
+                            {cls.startTime} - {cls.endTime}
+                          </p>
+                          <p>
+                            <MapPin size={14} />
+                            {cls.room}
+                          </p>
+                          <p>Instructor: {cls.instructor}</p>
+                        </div>
+                        <div className="class-actions">
+                          <button
+                            onClick={() => handleUpdateClass(cls._id, cls)}
+                            disabled={loading}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClass(cls._id)}
+                            disabled={loading}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="timetable-legend">
-        <h3>Subject Legend</h3>
-        <div className="legend-items">
-          {Object.entries(schedule).map(([day, classes]) => 
-            classes.map(classItem => (
-              <div key={classItem.id} className="legend-item">
-                <div 
-                  className="legend-color"
-                  style={{ backgroundColor: classItem.color }}
-                ></div>
-                <span>{classItem.subject}</span>
-              </div>
-            ))
-          ).flat().filter((item, index, self) => 
-            index === self.findIndex(i => i.key === item.key)
-          )}
+      {(!schedule.courses || schedule.courses.length === 0) && !loading && (
+        <div className="empty-state">
+          <Calendar size={64} />
+          <h3>No classes scheduled</h3>
+          <p>Add your first class to get started</p>
         </div>
-      </div>
+      )}
 
       {showAddForm && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>{editingClass ? 'Edit Class' : 'Add New Class'}</h2>
-              <button 
+              <h2>Add New Class</h2>
+              <button
                 className="close-btn"
                 onClick={() => {
                   setShowAddForm(false);
-                  setEditingClass(null);
-                  setNewClass({
-                    subject: '',
-                    time: '',
-                    location: '',
-                    day: 'monday',
-                    color: '#ff6b35'
-                  });
+                  setError("");
                 }}
+                disabled={loading}
               >
                 <X size={24} />
               </button>
             </div>
-            
-            <form onSubmit={editingClass ? handleUpdateClass : handleAddClass}>
+
+            <form onSubmit={handleAddClass}>
+            <div className="form-group">
+              <label>Course Name</label>
+              <input
+                type="text"
+                value={newClass.courseName}
+                  onChange={(e) =>
+                    setNewClass({ ...newClass, courseName: e.target.value })
+                  }
+                required
+                  disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+                <label>Instructor</label>
+              <input
+                type="text"
+                  value={newClass.instructor}
+                  onChange={(e) =>
+                    setNewClass({ ...newClass, instructor: e.target.value })
+                  }
+                required
+                  disabled={loading}
+              />
+            </div>
+
               <div className="form-group">
-                <label className="form-label">Subject Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={newClass.subject}
-                  onChange={(e) => setNewClass({
-                    ...newClass,
-                    subject: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Day</label>
-                  <select
-                    className="form-select"
-                    value={newClass.day}
-                    onChange={(e) => setNewClass({
-                      ...newClass,
-                      day: e.target.value
-                    })}
-                  >
-                    {days.map(day => (
-                      <option key={day} value={day}>
-                        {formatDay(day)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Time</label>
-                  <select
-                    className="form-select"
-                    value={newClass.time}
-                    onChange={(e) => setNewClass({
-                      ...newClass,
-                      time: e.target.value
-                    })}
-                    required
-                  >
-                    <option value="">Select Time</option>
-                    {timeSlots.map(time => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Location</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Room number or location"
-                  value={newClass.location}
-                  onChange={(e) => setNewClass({
-                    ...newClass,
-                    location: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Subject Color</label>
-                <div className="color-picker">
-                  {subjectColors.map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={`color-option ${newClass.color === color ? 'selected' : ''}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewClass({
-                        ...newClass,
-                        color: color
-                      })}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              <div className="form-actions">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingClass(null);
-                  }}
+                <label>Day</label>
+                <select
+                  value={newClass.day}
+                  onChange={(e) =>
+                    setNewClass({ ...newClass, day: e.target.value })
+                  }
+                  disabled={loading}
                 >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  <Save size={16} />
-                  {editingClass ? 'Update Class' : 'Add Class'}
-                </button>
+                  {days.map((day) => (
+                    <option key={day} value={day}>
+                      {day.charAt(0).toUpperCase() + day.slice(1)}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </form>
+
+              <div className="form-group">
+                <label>Period</label>
+                <select
+                  value={newClass.period}
+                  onChange={(e) =>
+                    setNewClass({ ...newClass, period: parseInt(e.target.value) })
+                  }
+                  required
+                  disabled={loading}
+                >
+                  {periods.map((period) => (
+                    <option key={period.period} value={period.period}>
+                      Period {period.period} ({period.startTime} - {period.endTime})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Room</label>
+                <input
+                  type="text"
+                  value={newClass.room}
+                  onChange={(e) =>
+                    setNewClass({ ...newClass, room: e.target.value })
+                  }
+                  required
+                  disabled={loading}
+                />
+            </div>
+
+              <div className="form-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                setShowAddForm(false);
+                    setError("");
+                  }}
+                  disabled={loading}
+                >
+                Cancel
+              </button>
+                <button type="submit" disabled={loading}>
+                  {loading ? "Adding..." : "Add Class"}
+                </button>
+            </div>
+          </form>
           </div>
         </div>
       )}

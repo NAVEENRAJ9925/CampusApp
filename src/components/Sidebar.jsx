@@ -6,7 +6,9 @@ import {
   Search, 
   Calendar, 
   MessageSquare,
-  BookOpen
+  BookOpen,
+  TrendingUp,
+  Vote
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -17,7 +19,9 @@ const Sidebar = ({ isCollapsed }) => {
     { path: '/lost-found', icon: Search, label: 'Lost & Found' },
     { path: '/timetable', icon: Calendar, label: 'Timetable' },
     { path: '/complaints', icon: MessageSquare, label: 'Complaints' },
-    { path: '/skill-exchange', icon: BookOpen, label: 'Skill Exchange' }
+    { path: '/skill-exchange', icon: BookOpen, label: 'Skill Exchange' },
+    { path: '/tech-news', icon: TrendingUp, label: 'Tech News' },
+    { path: '/polls', icon: Vote, label: 'Polls' }
   ];
 
   return (
